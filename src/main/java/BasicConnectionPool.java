@@ -17,6 +17,8 @@ public class BasicConnectionPool implements ConnectionPool {
     private int size;
     private final int maximumPoolSize;
     private final Queue<Connection> connectionsPoll;
+    
+    private static BasicConnectionPool basicConnectionPoolInstance = null;
 
     private BasicConnectionPool(String driverClassName, String jdbcUrl, String userName, String password, int maximumPoolSize)
             throws ClassNotFoundException, InstantiationException, IllegalAccessException {
@@ -32,14 +34,22 @@ public class BasicConnectionPool implements ConnectionPool {
     }
 
     /**
-     * Public method to get an instance of connection pool class. Follwing Singelton design pattern so that only one
-     * instance of connection pool exits
+     * Public method to get an instance of connection pool class.
+     * Following Singelton design pattern so that only one instance of connection pool exists
      **/
     public static BasicConnectionPool newFixedThreadPool(String driverClassName, String jdbcUrl, String userName,
                                                          String password, int maximumPoolSize)
             throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-
-        return new BasicConnectionPool(driverClassName, jdbcUrl, userName, password, maximumPoolSize);
+            
+            if(basicConnectionPoolInstance == null) {
+                synchronized(BasicConnectionPool.class) {
+                    if(basicConnectionPoolInstance == null) {
+                        basicConnectionPoolInstance = new BasicConnectionPool(driverClassName, jdbcUrl, userName, password, maximumPoolSize);
+                    }
+                }
+            }
+        
+        return basicConnectionPoolInstance;
     }
 
     @Override
@@ -66,7 +76,7 @@ public class BasicConnectionPool implements ConnectionPool {
                 }
             }
             if (!createNewConnection) {
-                connectionsPoll.poll();
+                return connectionsPoll.poll();
             }
         }
         return createNewConnection();
